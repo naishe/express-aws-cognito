@@ -1,4 +1,4 @@
-import jwt, { Jwt, JwtPayload } from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import jwk2Pem from "jwk-to-pem";
 import fetch from "node-fetch";
 import Config, { CongnitoJwt } from "./Config";
