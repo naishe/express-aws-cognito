@@ -22,6 +22,29 @@ export default interface Config {
    * The maximum allowed age for tokens to still be valid.
    * It is expressed in seconds or a string describing a time span [vercel/ms](https://github.com/vercel/ms).
    *
+   * **IMPORTANT:** maxAge forces the token to expire even if the `exp` of the token says the token
+   * is still valid. So, token will expire if `iat + maxAge > now()` even if `exp > now()`.
+   *
+   * **Example:** 1000, "2 days", "10h", "7d". A numeric value is interpreted as a seconds count.
+   * If you use a string be sure you provide the time units (days, hours, etc), otherwise milliseconds unit
+   * is used by default ("120" is equal to "120ms").
+   *
+   * *Refer*: maxAge from [node-jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
+   *
+   */
+  maxAge?: number | string;
+
+  /**
+   * @deprecated
+   *
+   * Use `maxAge` instead. See {@link #maxAge} .
+   *
+   * The maximum allowed age for tokens to still be valid.
+   * It is expressed in seconds or a string describing a time span [vercel/ms](https://github.com/vercel/ms).
+   *
+   * **IMPORTANT:** tokenExpiration forces the token to expire even if the `exp` of the token says the token
+   * is still valid. So, token will expire if `iat + tokenExpiration > now()` even if `exp > now()`.
+   *
    * **Example:** 1000, "2 days", "10h", "7d". A numeric value is interpreted as a seconds count.
    * If you use a string be sure you provide the time units (days, hours, etc), otherwise milliseconds unit
    * is used by default ("120" is equal to "120ms").

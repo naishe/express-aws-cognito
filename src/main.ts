@@ -16,32 +16,71 @@ export default class ExpressAwsCognito {
     this.init();
   }
 
-  private init() {
-    fetch(`${this.issuer}/.well-known/jwks.json`)
-      .then((resp) => resp.json() as Promise<Jwks>)
-      .then((response) => {
-        this.pems = response.keys.reduce((cum, { kid, n, e, kty }) => {
-          cum[kid] = jwk2Pem({
-            kty,
-            n,
-            e,
-          });
-          return cum;
-        }, {} as Record<string, string>);
-        this.initializationComplete = true;
-        if (this.config.onInitComplete) {
-          this.config.onInitComplete();
-        }
-      })
-      .catch((err) => {
-        if (this.config.onInitFailed) {
-          this.config.onInitFailed(
-            new Error("Unable to generate certificate due to \n" + err)
-          );
-        } else {
-          console.error("Unable to generate certificate due to \n", err);
-        }
+  private async init() {
+    const resp = await fetch(`${this.issuer}/.well-known/jwks.json`);
+
+    // Handle error respose
+    if (resp.status < 200 || resp.status > 299) {
+      const json: { message: string } = await resp.json();
+      const failedCb = this.config.onInitFailed;
+      if (failedCb) {
+        failedCb(new Error(json.message));
+      } else {
+        console.error("Unable to generate certificate due to \n", json.message);
+      }
+      return;
+    }
+
+    const jwks: Jwks = await resp.json();
+    this.pems = jwks.keys.reduce((cum, { kid, n, e, kty }) => {
+      cum[kid] = jwk2Pem({
+        kty,
+        n,
+        e,
       });
+      return cum;
+    }, {} as Record<string, string>);
+
+    this.initializationComplete = true;
+    if (this.config.onInitComplete) {
+      this.config.onInitComplete();
+    }
+
+    // .then((resp) => {
+    //   if (resp.status < 200 || resp.status > 299) {
+    //     return Promise.reject(resp);
+    //   }
+    //   return resp.json() as Promise<Jwks>;
+    // })
+    // .then((response) => {
+    //   console.log(">>>>> " + JSON.stringify(response));
+    //   this.pems = response.keys.reduce((cum, { kid, n, e, kty }) => {
+    //     cum[kid] = jwk2Pem({
+    //       kty,
+    //       n,
+    //       e,
+    //     });
+    //     return cum;
+    //   }, {} as Record<string, string>);
+    //   this.initializationComplete = true;
+    //   if (this.config.onInitComplete) {
+    //     this.config.onInitComplete();
+    //   }
+    // })
+    // .catch((resp) => {
+    //   const failedCb = this.config.onInitFailed;
+
+    //   resp.json().then((errJson: { message: string }) => {
+    //     if (failedCb) {
+    //       failedCb(new Error(errJson.message));
+    //     } else {
+    //       console.error(
+    //         "Unable to generate certificate due to \n",
+    //         JSON.stringify(errJson)
+    //       );
+    //     }
+    //   });
+    // });
   }
 
   validate(token: string): JwtPayload {
