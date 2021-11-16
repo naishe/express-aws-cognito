@@ -5,12 +5,32 @@ import { sanitizeConfig } from "../utils";
 jest.setTimeout(10_000);
 
 const minimalValidConf: Config = {
-  cognitoUserPoolId: "us-east-1_TcoKGbf7n",
-  region: "us-east-1",
+  cognitoUserPoolId: "ap-south-1_oUjyqdXf1",
+  region: "ap-south-1",
   tokenUse: "access",
 };
 
-// const notExistingUserPool = "us-east-1_TcoKGbf7n";
+const notExistingUserPool = "ap-south-1_oUjyqdXf2";
+
+describe("#init", () => {
+  test("Initialization", async () => {
+    // jest.spyOn(ExpressAwsCognito.prototype, '').mockResolvedValueOnce();
+    // jest.spyOn(ExpressAwsCognito.prototype, 'loadIframe').mockReturnValueOnce();
+    // jest.spyOn(ExpressAwsCognito.prototype, 'constructor');
+    console.error = jest.fn();
+    const init = jest.spyOn(ExpressAwsCognito.prototype as any, "init");
+    const instance = new ExpressAwsCognito({
+      ...minimalValidConf,
+      cognitoUserPoolId: notExistingUserPool,
+    });
+    expect(init).toBeCalledTimes(1);
+    await (instance as any).init();
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching(/Unable to generate certificate due to/),
+      expect.stringMatching(/.+/)
+    );
+  });
+});
 
 describe("Testing Negative Scenarios", () => {
   test("Initialize without parameters", function () {
@@ -91,16 +111,53 @@ describe("Testing Negative Scenarios", () => {
 
   test("Non existing user pool should call onInitFailed", function (done) {
     function onInitComplete() {
+      console.log("here!!!");
       expect(true).toBe(false);
       done();
     }
 
     function onInitFailed() {
+      console.log("failed:(");
       expect(true).toBe(true);
       done();
     }
 
     new ExpressAwsCognito({
+      ...minimalValidConf,
+      cognitoUserPoolId: notExistingUserPool,
+      onInitComplete,
+      onInitFailed,
+    });
+  });
+
+  test("Validation before initialization should throw error", function () {
+    expect(() =>
+      new ExpressAwsCognito({
+        ...minimalValidConf,
+      }).validate("Some token")
+    ).toThrowError(
+      "The middleware is still initializing or failed during initialization."
+    );
+  });
+
+  test("Invalid token should throw error", function (done) {
+    function onInitComplete() {
+      try {
+        expect(middleware.validate("Some invalid token string")).toThrowError(
+          "The middleware is still initializing or failed during initialization."
+        );
+        done();
+      } catch (e) {
+        done(e);
+      }
+    }
+
+    function onInitFailed() {
+      expect(true).toBe(false);
+      done();
+    }
+
+    const middleware = new ExpressAwsCognito({
       ...minimalValidConf,
       onInitComplete,
       onInitFailed,
@@ -113,6 +170,26 @@ describe("Testing Positive Scenarios", () => {
     expect(sanitizeConfig({ ...minimalValidConf })).toMatchObject(
       minimalValidConf
     );
+  });
+
+  test("Valid config should call onInitComplete", function (done) {
+    function onInitComplete() {
+      console.log("here!!!");
+      expect(true).toBe(true);
+      done();
+    }
+
+    function onInitFailed() {
+      console.log("failed:(");
+      expect(true).toBe(false);
+      done();
+    }
+
+    new ExpressAwsCognito({
+      ...minimalValidConf,
+      onInitComplete,
+      onInitFailed,
+    });
   });
 
   // test("Config is sanitized and returne correctly", function (done) {

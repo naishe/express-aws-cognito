@@ -45,42 +45,6 @@ export default class ExpressAwsCognito {
     if (this.config.onInitComplete) {
       this.config.onInitComplete();
     }
-
-    // .then((resp) => {
-    //   if (resp.status < 200 || resp.status > 299) {
-    //     return Promise.reject(resp);
-    //   }
-    //   return resp.json() as Promise<Jwks>;
-    // })
-    // .then((response) => {
-    //   console.log(">>>>> " + JSON.stringify(response));
-    //   this.pems = response.keys.reduce((cum, { kid, n, e, kty }) => {
-    //     cum[kid] = jwk2Pem({
-    //       kty,
-    //       n,
-    //       e,
-    //     });
-    //     return cum;
-    //   }, {} as Record<string, string>);
-    //   this.initializationComplete = true;
-    //   if (this.config.onInitComplete) {
-    //     this.config.onInitComplete();
-    //   }
-    // })
-    // .catch((resp) => {
-    //   const failedCb = this.config.onInitFailed;
-
-    //   resp.json().then((errJson: { message: string }) => {
-    //     if (failedCb) {
-    //       failedCb(new Error(errJson.message));
-    //     } else {
-    //       console.error(
-    //         "Unable to generate certificate due to \n",
-    //         JSON.stringify(errJson)
-    //       );
-    //     }
-    //   });
-    // });
   }
 
   validate(token: string): JwtPayload {
@@ -99,9 +63,8 @@ export default class ExpressAwsCognito {
 
     return jwt.verify(token, pem, {
       issuer: this.issuer,
-      // @ts-ignore refer: https://github.com/DefinitelyTyped/DefinitelyTyped/pull/57146
-      maxAge: this.config.tokenExpiration,
-    });
+      maxAge: this.config.maxAge,
+    }) as JwtPayload;
   }
 
   private tokenSanityCheck(decodedToken: CongnitoJwt) {
